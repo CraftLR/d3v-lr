@@ -1,5 +1,6 @@
 use axum::{
   http::StatusCode,
+  response::Html,
   routing::{get, post},
   Json, Router,
 };
@@ -26,8 +27,22 @@ async fn main() {
 }
 
 // basic handler that responds with a static string
-async fn root() -> String {
-  "**Hello, World!** but with Markdown!".md_to_html()
+async fn root() -> Html<String> {
+  let md = "**Hello, World!** but with Markdown!".md_to_html();
+  format!(
+    r#"
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Markdown to HTML</title>
+      </head>
+      <body>
+        {md}
+      </body>
+    </html>
+    "#,
+  )
+  .into()
 }
 
 async fn create_user(
