@@ -1,11 +1,12 @@
 use axum::{
-  http::StatusCode,
-  response::Html,
+  body::Body,
+  http::{header, HeaderMap},
+  response::{Html, Response},
   routing::{get, post},
   Json, Router,
 };
 use md::MdToHtml;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 mod md;
 
@@ -18,8 +19,10 @@ async fn main() {
   let app = Router::new()
     // `GET /` goes to `root`
     .route("/", get(root))
-    // `POST /users` goes to `create_user`
-    .route("/users", post(create_user));
+    // 1st challenge : post a letter to our Boite Au lettres
+    .route("/bal", post(bal))
+    // for the lol
+    .route("/wp_admin", get(you_shall_not_pass));
 
   // run our app with hyper, listening globally on port 3000
   let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -45,23 +48,9 @@ async fn root() -> Html<String> {
   .into()
 }
 
-async fn create_user(
-  // this argument tells axum to parse the request body
-  // as JSON into a `CreateUser` type
-  Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-  // insert your application logic here
-  let user = User { id: 1337, username: payload.username };
-
-  // this will be converted into a JSON response
-  // with a status code of `201 Created`
-  (StatusCode::CREATED, Json(user))
-}
-
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-  username: String,
+async fn bal() -> Json<User> {
+  let user = User { id: 1337, username: "plop".to_string() };
+  Json(user)
 }
 
 // the output to our `create_user` handler
@@ -69,4 +58,18 @@ struct CreateUser {
 struct User {
   id: u64,
   username: String,
+}
+
+const WEBP: &[u8] = include_bytes!("../../you_shall_not_pass.webp");
+async fn you_shall_not_pass() -> Response<Body> {
+  let mut headers = HeaderMap::new();
+  headers.insert(header::CONTENT_TYPE, "image/webp".parse().unwrap());
+
+  let body = Body::from(WEBP);
+
+  Response::builder()
+    .status(200)
+    .header("Content-Type", "image/webp")
+    .body(body)
+    .unwrap()
 }
